@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div id="output" class="output">
+  <pre id="log"></pre>
+  </div>
+ 
+  <button id="pthing">pthing</button>
+  <button id="getdata">getdata</button>
+
+<script>
+  var ChromeSamples = {
+    log: function() {
+      var line = Array.prototype.slice.call(arguments).map(function(argument) {
+        return typeof argument === 'string' ? argument : JSON.stringify(argument);
+      }).join(' ');
+
+      document.querySelector('#log').textContent += line + '\n';
+    },
+
+    clearLog: function() {
+      document.querySelector('#log').textContent = '';
+    },
+
+    setStatus: function(status) {
+      document.querySelector('#status').textContent = status;
+    },
+
+    setContent: function(newContent) {
+      var content = document.querySelector('#content');
+      while(content.hasChildNodes()) {
+        content.removeChild(content.lastChild);
+      }
+      content.appendChild(newContent);
+    }
+  };
+  
+
+
+</script>
+<script>
+log = ChromeSamples.log;//causes error?
+
+async function onpthingclick() {
+try {
+
+    //const value = event.target.value;
+    //const decoder = new TextDecoder('utf-8');
+    //const myString = decoder.decode(value);
+	const myString = {"ff": "ee", "ee": "dd"};
+	log(myString);
+		var xml = new XMLHttpRequest();
+xml.open("POST","{{url_for('send_sensor_values')}}",true); 
+xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+
+xml.onload = function(){
+    var dataReply = JSON.parse(this.responseText);
+	log(dataReply);
+};//endfunction
+
+//const loco = position.coords.latitude + ", " + position.coords.longitude;
+//const loco = 'hi';
+const btData = {
+sense: myString,
+//location: loco, //position.coords.longitude,
+};
+dataSend= JSON.stringify(btData);
+xml.send(dataSend);
+}
+catch {
+log('error');
+
+}
+}
+
+async function ongetdataclick() {
+try {
+log("cl");
+navigator.geolocation.getCurrentPosition((position) => {
+
+//const myString = decoder.decode(value);
+log("hello")
+	const myString = '1';
+	const loco = position.coords.latitude + "," + position.coords.longitude;
+	log(loco);
+	
+	
+	
+	log(myString);
+		var xml = new XMLHttpRequest();
+xml.open("POST","{{url_for('collect')}}",true); 
+xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+
+const btData = {
+getdata: myString,
+location: loco,
+};
+
+dataSend= JSON.stringify(btData);
+xml.send(dataSend);
+});
+}
+catch {
+log('error');
+}
+
+
+}
+</script>
+
+<script>
+  document.querySelector('#pthing').addEventListener('click', function(event) {
+      onpthingclick();
+	  //log('rreer');
+  });
+    document.querySelector('#getdata').addEventListener('click', function(event) {
+      ongetdataclick();
+	  //log('rreer');
+  });
+</script>
+</body>
+</html> 
