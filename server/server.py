@@ -1,17 +1,19 @@
-import os, json, pytest, subprocess, sys, csv, shutil
+import os, json, socket, threading, csv, shutil#, pytest, jsonpickle
 from flask import Flask
 from datetime import datetime
 from flask import render_template, Blueprint, request, jsonify, session, url_for, redirect, session
 from flask.logging import default_handler
-#from flask_cors import CORS, cross_origin
-#from flask_session import Session
-#from redis import Redis
+                      
+
 
 app = Flask(__name__)
 
-# class Thing(object):
-        # def __init__(self, name):
-            # self.name = name
+class Thing(object):
+        def __init__(self, name):
+            self.name = name
+
+target_host = "172.16.143.44"
+target_port = 9999    
 SAVE_DIR    = os.path.dirname(os.path.abspath(__file__))
 times   = []
 forces  = []
@@ -20,12 +22,7 @@ array_size = 10
 def home():
 
     print("ccff")
-    # d=open('data.json', 'r')
-    # e = json.loads(d.read())
-    # d.close
-    # print(e)
-    # subprocess.Popen("test.py {e}", shell=True)
-    
+
     #with open("data.json", "r") as f:
     #    e =(json.load(1))
         #f.close()
@@ -34,25 +31,24 @@ def home():
     #f = open("data.json", 'r')
     #e = f.read()
     #f.close()
-    x = 0
-    #with open("data.json", 'r') as f:
-        
-    #    for line in f:
-    #        e = f.read
-            #if json.dumps(e.get("uu")) != "null":
-            #    print(float(json.dumps(data.get("uu")).strip('""')))
-            #    #x = x+int(e.get("uu"))
-    #        x = x+5
-  #  print(x)
-  #  f.close
-   # open('data.json', 'w').close()
-   # print(e)
-    
-    g = open("getdata.json", 'w')
-    #json.dumps({"getdata":"0"})
-    g.write('{"getdata":"0"}')
-    g.close
-    #    f.write('\n')
+    # x = 0
+    # with open('data.json', 'r') as f:
+
+        # for line in f:
+            # e = json.loads(f.read())
+            # if json.dumps(e.get("uu")) != "null":
+                # print(float(json.dumps(data.get("uu")).strip('""')))
+                # #x = x+int(e.get("uu"))
+            # x = x+5
+    # print(x)
+    # open('data.json', 'w').close()
+
+    # open('getdata.json', 'w').close()
+    # g = open("getdata.json", 'w')
+    # #json.dumps({"getdata":"0"})
+    # g.write('{"getdata":"0"}')
+    # g.close
+    # #    f.write('\n')
     
     return render_template('indexq.html')
    
@@ -61,30 +57,25 @@ def home():
 def tile_stuff():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     print(timestamp)
-    
-
-    # if json.dumps(data.get("uu")) != "null":
-        # print(float(json.dumps(data.get("uu")).strip('""')))
-        
-    # with open('data.json', 'a') as f:
-       # json.dump(data, f)
-       # f.write('\n')  
-    g = open("getdata.json", 'r')
-    e = json.loads(g.read())
-    g.close
-
-    if e.get("getdata") == '1':
+    data = request.get_json(force=True)
+   
+    if data.get("uu") == "success":
+        print(data.get("ff"))
+        return "b"
+    if data.get("ff") =="thung":
+        print("ll")
         times.clear()
         forces.clear()
         csv_name  = os.path.join(SAVE_DIR, f"penetrometer_.csv {timestamp}")
         data = request.get_json(force=True)
         print('wsss')
-        line = data.get("uu")
+        line = data.get("gg")
         print(line)
         parts = line.split(",")
         print(parts)
         for part in parts[1::2]:
-            raw_adc = int(part)
+            #raw_adc = int(part)
+            raw_adc = float(part)
             force_kg = (raw_adc)
 
             force_zeroed = abs(force_kg)  # abs handles either load cell direction
@@ -112,12 +103,8 @@ def tile_stuff():
         shutil.move(csv_name, foldername)
         shutil.move("coordinates.txt", foldername)
         
-        return '1'
-    else:
-        return '0'
-    
-    #return 'hello'
-    
+        return "b"
+        
 @app.route("/sensor", methods=["GET", "POST"])
 def send_sensor_values():
     data = request.get_json(force=True)
@@ -134,14 +121,25 @@ def send_sensor_values():
 def collect():
     data = request.get_json(force=True)
     print(data)
-    if data.get("getdata") == '1':
-        g = open("getdata.json", 'w')
-        g.write('{"getdata":"1"}')
-        g.close
+    
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((target_host, target_port))
+    if data.get('collect') == 'calibrate':
+        client.send("calibrate\r\n".encode())
+    elif data.get('collect') == 'getdata':
+        client.send("getdata\r\n".encode())
         h = open("coordinates.txt", 'w')
         h.write(data.get("location"))
         h.close
-        
-    else:
-        print('error')
-    return jsonify(data)
+    elif data.get('collect') == 'checkcal':
+        client.send("checkcal\r\n".encode())
+    elif data.get('collect') == 'zero':
+        client.send("zero\r\n".encode())
+
+    # if data.get("getdata") == '1':
+        # g = open("getdata.json", 'w')
+        # g.write('{"getdata":"1"}')
+        # g.close
+    # else:
+        # print('error')
+    return "a"
