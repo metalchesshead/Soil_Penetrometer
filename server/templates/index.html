@@ -6,8 +6,11 @@
   <pre id="log"></pre>
   </div>
  
-  <button id="pthing">pthing</button>
+  <button id="pthing">calibrate</button>
   <button id="getdata">getdata</button>
+  <button id="checkcal">checkcalibration</button>
+  <button id="zero">zero</button>
+  <input id="samples">Samples</input>
 
 <script>
   var ChromeSamples = {
@@ -48,21 +51,26 @@ try {
     //const value = event.target.value;
     //const decoder = new TextDecoder('utf-8');
     //const myString = decoder.decode(value);
-	const myString = {"ff": "ee", "ee": "dd"};
+	const myString = "calibrate";
 	log(myString);
 		var xml = new XMLHttpRequest();
-xml.open("POST","{{url_for('send_sensor_values')}}",true); 
+xml.open("POST","{{url_for('collect')}}",true); 
 xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 
 xml.onload = function(){
+try {
     var dataReply = JSON.parse(this.responseText);
 	log(dataReply);
+	}
+	catch{
+	log('error')
+	}
 };//endfunction
 
 //const loco = position.coords.latitude + ", " + position.coords.longitude;
 //const loco = 'hi';
 const btData = {
-sense: myString,
+collect: myString,
 //location: loco, //position.coords.longitude,
 };
 dataSend= JSON.stringify(btData);
@@ -81,7 +89,7 @@ navigator.geolocation.getCurrentPosition((position) => {
 
 //const myString = decoder.decode(value);
 log("hello")
-	const myString = '1';
+	const myString = 'getdata';
 	const loco = position.coords.latitude + "," + position.coords.longitude;
 	log(loco);
 	
@@ -93,7 +101,7 @@ xml.open("POST","{{url_for('collect')}}",true);
 xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 
 const btData = {
-getdata: myString,
+collect: myString,
 location: loco,
 };
 
@@ -107,6 +115,44 @@ log('error');
 
 
 }
+async function oncheckcalclick() {
+try {
+//const myString = decoder.decode(value);
+	const myString = 'checkcal';
+	log(myString);
+		var xml = new XMLHttpRequest();
+xml.open("POST","{{url_for('collect')}}",true); 
+xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+
+const btData = {
+collect: myString,
+};
+dataSend= JSON.stringify(btData);
+xml.send(dataSend);
+}
+catch {
+log('error');
+}
+}
+async function onzeroclick() {
+try {
+//const myString = decoder.decode(value);
+	const myString = 'zero';
+	log(myString);
+		var xml = new XMLHttpRequest();
+xml.open("POST","{{url_for('collect')}}",true); 
+xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+
+const btData = {
+collect: myString,
+};
+dataSend= JSON.stringify(btData);
+xml.send(dataSend);
+}
+catch {
+log('error');
+}
+}
 </script>
 
 <script>
@@ -116,6 +162,14 @@ log('error');
   });
     document.querySelector('#getdata').addEventListener('click', function(event) {
       ongetdataclick();
+	  //log('rreer');
+  });
+      document.querySelector('#checkcal').addEventListener('click', function(event) {
+      oncheckcalclick();
+	  //log('rreer');
+  });
+        document.querySelector('#zero').addEventListener('click', function(event) {
+      onzeroclick();
 	  //log('rreer');
   });
 </script>
