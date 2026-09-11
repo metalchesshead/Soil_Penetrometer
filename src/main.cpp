@@ -31,6 +31,21 @@ int httpResponseCode = 0;
 NAU7802 myScale;
 bool calibratescale;
 HTTPClient http;
+WiFiClient client;
+float   calibrationFactor = -0.000929f;
+float   cf = 0.04;
+int32_t zeroOffset        = -4399203;
+int32_t zero = 0;
+int32_t averageRaw() {
+  int32_t sum = 0;
+int32_t getraw = 0;
+  for (int i = 0; i < 32; i++) {
+    while (!myScale.available()) delayMicroseconds(100);
+    sum += myScale.getReading();
+  }
+  return sum / 32;
+}
+
 
 void setup(){
    EEPROM.begin(EEPROM_SIZE); 
@@ -60,18 +75,12 @@ server.begin();
   Serial.println("Scale detected!");
 
      myScale.calculateZeroOffset(2);
-               
-
+       myScale.setSampleRate(NAU7802_SPS_80);
+  myScale.setGain(NAU7802_GAIN_128);
+  myScale.calibrateAFE();          
 } 
 
-void recordSystemSettings(void)
-{
-  //Get various values from the library and commit them to NVM
-  EEPROM.put(LOCATION_CALIBRATION_FACTOR, myScale.getCalibrationFactor());
-  EEPROM.put(LOCATION_ZERO_OFFSET, myScale.getZeroOffset());
 
-  EEPROM.commit(); //Some platforms need this. Comment this line if needed
-}
 void calibrateScale(void)
 {
   Serial.println();
@@ -95,7 +104,7 @@ void calibrateScale(void)
 
   //Read user input
   //float weightOnScale = Serial.parseFloat();
-float weightOnScale = 70.00;
+float weightOnScale = 350.00;
   Serial.println();
 
   myScale.calculateCalibrationFactor(weightOnScale, 64); //Tell the library how much weight is currently on it 
@@ -104,178 +113,127 @@ float weightOnScale = 70.00;
 
   // Serial.print(F("New Scale Reading: "));
   // Serial.println(myScale.getWeight(), 2);
-recordSystemSettings();
+
 
   
 }
 
-void readSystemSettings(void)
-{
-  float settingCalibrationFactor; //Value used to convert the load cell reading to lbs or kg
-  int32_t settingZeroOffset; //Zero value that is found when scale is tared
 
-  //Look up the calibration factor
-  EEPROM.get(LOCATION_CALIBRATION_FACTOR, settingCalibrationFactor);
-  if (settingCalibrationFactor == 0xFFFFFFFF)
-  {
-    settingCalibrationFactor = 1.0; //Default to 1.0
-    EEPROM.put(LOCATION_CALIBRATION_FACTOR, settingCalibrationFactor);
-  }
-
-  //Look up the zero tare point
-  EEPROM.get(LOCATION_ZERO_OFFSET, settingZeroOffset);
-  if (settingZeroOffset == 0xFFFFFFFF)
-  {
-    settingZeroOffset = 0; //Default to 0 - i.e. no offset
-    EEPROM.put(LOCATION_ZERO_OFFSET, settingZeroOffset);
-  }
-
-  //Pass these values to the library
-  myScale.setCalibrationFactor(settingCalibrationFactor);
-  myScale.setZeroOffset(settingZeroOffset);
-
-  // settingsDetected = true; //Assume for the moment that there are good cal values
-  // if (settingCalibrationFactor == 1.0 || settingZeroOffset == 0)
-  //   settingsDetected = false; //Defaults detected. Prompt user to cal scale.
-}
+int32_t sum;
 
 void getdata() {
+  client = server.available();
+thing = "";
          float tt = 0.0;
-            for (int i = 0; i<20; i++) {
-              if (i ==499) {
-                thing = thing + String(tt, 1) + "," + String(myScale.getWeight());
-              } else {
-            thing = thing + String(tt, 1) + "," + String(myScale.getWeight()) + ",";
-              }
-            tt = tt + 0.01;
-            delay(10);
+      //       for (int i = 0; i<20; i++) {
+      //       while (!myScale.available()) delayMicroseconds(100);
+      //       sum += myScale.getReading();
+      //         if (i ==499) {
+      //           //thing = thing + String(tt, 1) + "," + String(myScale.getWeight());
+      //         } else {
+      //       //thing = thing + String(tt, 1) + "," + String(myScale.getWeight()) + ",";
+      //         }
+      //       tt = tt + 0.01;
+      //       delay(10);
             
 
-       }
-       Serial.println(thing);
+      //  }
+     // while(client.available() ==0) {
+      averageRaw();
+       //Serial.println(zero);
+       int32_t raw = averageRaw();
+       //Serial.println(raw);
+       raw = (raw - zero)*cf;
+       //thing = String(raw);
+    Serial.println(String(raw));
+      //  thing = thing + String(tt, 2) + "," + String(myScale.getWeight());
+      //  tt = tt + 0.01;
+      //  delay(10);
+//}
 }
 void loop(){
 
-WiFiClient client = server.available();
-       //Serial.println(myScale.getReading());
+  Serial.println(F("zero or start recording"));
+  while (Serial.available()) Serial.read(); //Clear anything in RX buffer
+  while (Serial.available() == 0) delay(10); //Wait for user to press key
+  char p = Serial.read();
+  if (p == 'z') {
+linebuff = 4;
 
-// if (client) {
-//   }
-  //while (1) {
-    while (client.available()) {
-      //uint8_t data = client.read();
-      // do something with char
-      //Serial.println(client.read());
-   line = client.readStringUntil('\r');
-       Serial.println(line);
-
-   if (line=="calibrate") {
-    Serial.println("pppp");
-    linebuff = 1;
-    break;
-   }
-   else if(line == "getdata") {
-    Serial.println("qqqq");
-    linebuff = 2;
-    break;
-   }
-      else if(line == "checkcal") {
-    Serial.println("rrrr");
+  }
+  else if (p == 's') {
     linebuff = 3;
-    break;
-   }
-         else if(line == "zero") {
-    Serial.println("rrrr");
-    linebuff = 4;
-    break;
-   }
-else {
-  Serial.println("error");
-linebuff = 0;
-break;
-}
-   
-    }
+  }
     if (linebuff == 1){
       linebuff = 0;
-Serial.println("post");
-calibrateScale();
-Serial.println(myScale.getCalibrationFactor());
-//thing = myScale.getCalibrationFactor();
-thing = "success";
-thung = myScale.getCalibrationFactor();
-http.POST("{\"uu\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
+            float kg  = 350.00;
+      int32_t rawW = averageRaw();
+      int32_t net  = rawW - zero;
+      cf  = kg / (float)net;   // kg/count — Python applies this directly
+      thing = "success";
+      thung = cf;
+      Serial.println(cf);
+
+      http.POST("{\"uu\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
+
 
     }
     else if (linebuff == 2) {
       Serial.println("get");
       thung = "thung";
-      getdata();
+
       http.POST("{\"gg\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
+      Serial.println(thing);
       Serial.println("success?");
       linebuff = 0;
     }
-    else if (linebuff == 3) {
-      
-      readSystemSettings();
-      Serial.println(myScale.getCalibrationFactor());
-      thing = "success";
-      thung = myScale.getCalibrationFactor();
-      http.POST("{\"uu\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
-      linebuff = 0;
+    else if (linebuff == 3) {//stlp
+      delay(100);
+      thing = "";
+      float tt = 0.0;
+      float start = millis();
+      //readSystemSettings();
+      int32_t rawW;
+      Serial.println("re");
+      thung = "thung";
+      while(1)
+      {
+        
+      rawW=(averageRaw() - zero)*cf;
+      tt = (millis()-start)/1000;
+      thing = thing + String(tt, 1) + "," + String(rawW)+ ",";
+      //         } else {
+
+      delay(10);
+      Serial.println("reading");
+      if (Serial.available()){
+        break;
+      }
+      }
+      //Serial.println(myScale.getCalibrationFactor());
+      //       float kg  = readFloat();
+      // int32_t rawW = averageRaw();
+      // int32_t net  = rawW - zero;
+      // cf  = kg / (float)net;   // kg/count — Python applies this directly
+      // thing = "success";
+     // thung = cf;
+   
+      http.POST("{\"gg\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
+        Serial.println(thing);
+      // linebuff = 0;
+      linebuff =0;
     }
         else if (linebuff == 4) {
-      Serial.println(myScale.getZeroOffset());
-  myScale.calculateZeroOffset(64);
-  thing = "success";
-  thung = myScale.getZeroOffset();
-        http.POST("{\"uu\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
+  //     Serial.println(myScale.getZeroOffset());
+  // myScale.calculateZeroOffset(64);
+        zero = averageRaw();
+        Serial.println(zero);
+      //myScale.setZeroOffset(zero);
+  //thing = "zero";
+  //thung = myScale.getZeroOffset();
+        //http.POST("{\"uu\":\"" + thing + "\",\"ff\":\"" + thung + "\"}");
       linebuff = 0;
     }
     
 
-//     if (server.hasClient()) {
-//       return;
-//     }
-  //}
-
-
-//             const uint16_t port = 5000;
-//   const char *host = "172.16.143.149";  // ip or dns
-//   WiFiClient client;
-
-//     if (!client.connect(host, port)) {
-//     Serial.println("Connection failed.");
-//     Serial.println("Waiting 5 seconds before retrying...");
-//     delay(5000);
-//     return;
-//   }
-
-//        String thing = String(analogRead(1));
-       
-      
-//          client.print("GET /index.html HTTP/1.1\n\n");
-
-//   int maxloops = 0;
-
-//   //wait for the server's reply to become available
-//   while (!client.available() && maxloops < 1000) {
-//     maxloops++;
-//     delay(1);  //delay 1 msec
-//   }
-//   if (client.available() > 0) {
-//     //read back one line from the server
-//     String line = client.readStringUntil('\r');
-//     Serial.println(line);
-//   } else {
-//     Serial.println("client.available() timed out ");
-//   }
-
-//   Serial.println("Closing connection.");
-//   client.stop();
-
-//   Serial.println("Waiting 5 seconds before restarting...");
-//   delay(5000);
-
-//       delay(100);
 }
