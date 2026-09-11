@@ -8,7 +8,6 @@
  
  
   <button id="getdata">get location</button>
-  <button id="zero">zero</button>
 
 <script>
   var ChromeSamples = {
@@ -41,7 +40,7 @@
 
 </script>
 <script>
-log = ChromeSamples.log;//causes error?
+log = ChromeSamples.log;
 
 
 
@@ -73,24 +72,7 @@ log('error');
 
 
 }
-async function onzeroclick() {
-try {
-	const myString = 'zero';
-	log(myString);
-		var xml = new XMLHttpRequest();
-xml.open("POST","{{url_for('collect')}}",true); 
-xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 
-const btData = {
-collect: myString,
-};
-dataSend= JSON.stringify(btData);
-xml.send(dataSend);
-}
-catch {
-log('error');
-}
-}
 </script>
 
 <script>
@@ -99,9 +81,6 @@ log('error');
       ongetdataclick();
 	  });
 
-        document.querySelector('#zero').addEventListener('click', function(event) {
-      onzeroclick();
-  });
 </script>
 </body>
 </html> 
