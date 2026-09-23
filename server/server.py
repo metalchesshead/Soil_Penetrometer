@@ -1,19 +1,11 @@
-import os, json, socket, threading, csv, shutil#, pytest, jsonpickle
-from flask import Flask
+import os, json, socket, threading, csv, shutil
 from datetime import datetime
-from flask import render_template, Blueprint, request, jsonify, session, url_for, redirect, session
+from flask import render_template, Blueprint, request, jsonify, session, url_for, redirect
 from flask.logging import default_handler
-                      
 
 
 app = Flask(__name__)
 
-class Thing(object):
-        def __init__(self, name):
-            self.name = name
-
-target_host = "172.16.143.44"
-target_port = 9999    
 SAVE_DIR    = os.path.dirname(os.path.abspath(__file__))
 times   = []
 forces  = []
@@ -21,75 +13,34 @@ array_size = 10
 @app.route("/")
 def home():
 
-    print("ccff")
-
-    #with open("data.json", "r") as f:
-    #    e =(json.load(1))
-        #f.close()
-    #    print(e)
-        
-    #f = open("data.json", 'r')
-    #e = f.read()
-    #f.close()
-    # x = 0
-    # with open('data.json', 'r') as f:
-
-        # for line in f:
-            # e = json.loads(f.read())
-            # if json.dumps(e.get("uu")) != "null":
-                # print(float(json.dumps(data.get("uu")).strip('""')))
-                # #x = x+int(e.get("uu"))
-            # x = x+5
-    # print(x)
-    # open('data.json', 'w').close()
-
-    # open('getdata.json', 'w').close()
-    # g = open("getdata.json", 'w')
-    # #json.dumps({"getdata":"0"})
-    # g.write('{"getdata":"0"}')
-    # g.close
-    # #    f.write('\n')
     
     return render_template('indexq.html')
    
     
-@app.route('/tile', methods=["GET", "POST"])
-def tile_stuff():
+@app.route('/data', methods=["GET", "POST"]) # Receive data as a post request
+def soil_data():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     print(timestamp)
     data = request.get_json(force=True)
    
-    if data.get("uu") == "success":
-        print(data.get("ff"))
-        return "b"
-    if data.get("ff") =="thung":
-        print("ll")
+    if data.get("ff") =="getdata":
         times.clear()
         forces.clear()
-        csv_name  = os.path.join(SAVE_DIR, f"penetrometer_.csv {timestamp}")
+        csv_name  = os.path.join(SAVE_DIR, f"penetrometer_.csv") # Create CSV file
         data = request.get_json(force=True)
-        print('wsss')
         line = data.get("gg")
         print(line)
         parts = line.split(",")
         print(parts)
         for part in parts[1::2]:
-            #raw_adc = int(part)
             raw_adc = float(part)
             force_kg = (raw_adc)
 
             force_zeroed = abs(force_kg)  # abs handles either load cell direction
-        #now = time.time()
-        #t = now - t_start
-        #times.append(t)
             forces.append(force_zeroed)
         for time in parts[::2]:
             times.append(time)
-        #open('getdata.json', 'w').close()
-        # with open('data.json', 'a') as f:
-            # json.dump(data, f)
-            # f.write('\n') 
-        with open(csv_name, "w", newline="") as f:
+        with open(csv_name, "w", newline="") as f: # Write to CSV file
             writer = csv.writer(f)
             writer.writerow(["Time (s)", "Force (kg)"])
             writer.writerows(zip(times, forces))
@@ -99,47 +50,21 @@ def tile_stuff():
         g.write('{"getdata":"0"}')
         g.close
         foldername = timestamp
-        os.makedirs(foldername)
+        os.makedirs(foldername) # Create folder
         shutil.move(csv_name, foldername)
-        shutil.move("coordinates.txt", foldername)
+        shutil.move("coordinates.txt", foldername) # Move data and coordinates to folder, each data point gets its own folder
         
         return "b"
-        
-@app.route("/sensor", methods=["GET", "POST"])
-def send_sensor_values():
-    data = request.get_json(force=True)
-    #print(data)
-    f = open("data.json", 'r')
-    #e = json.loads(f.read())
-    e = f.read()
-    f.close
-    #open('data.json', 'w').close()
-    print(e)
-    return jsonify(e)
+    return "aa"
 
 @app.route("/collect", methods=["GET", "POST"])
 def collect():
-    data = request.get_json(force=True)
+    data = request.get_json(force=True) # get json data from the post request we sent with the phone
     print(data)
-    
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((target_host, target_port))
-    if data.get('collect') == 'calibrate':
-        client.send("calibrate\r\n".encode())
-    elif data.get('collect') == 'getdata':
-        client.send("getdata\r\n".encode())
-        h = open("coordinates.txt", 'w')
+
+    if data.get('collect') == 'getdata':
+        h = open("coordinates.txt", 'w') # Write coordinates to text file
         h.write(data.get("location"))
         h.close
-    elif data.get('collect') == 'checkcal':
-        client.send("checkcal\r\n".encode())
-    elif data.get('collect') == 'zero':
-        client.send("zero\r\n".encode())
 
-    # if data.get("getdata") == '1':
-        # g = open("getdata.json", 'w')
-        # g.write('{"getdata":"1"}')
-        # g.close
-    # else:
-        # print('error')
     return "a"
