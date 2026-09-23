@@ -10,7 +10,7 @@
   <button id="getdata">get location</button>
 
 <script>
-  var ChromeSamples = {
+  var ChromeSamples = { // This is makes the log appear on the app, mainly for testing purposes since there is no way to view the console on cellphone
     log: function() {
       var line = Array.prototype.slice.call(arguments).map(function(argument) {
         return typeof argument === 'string' ? argument : JSON.stringify(argument);
@@ -44,8 +44,8 @@ log = ChromeSamples.log;
 
 
 
-async function ongetdataclick() {
-try {
+async function ongetdataclick() { // When button is clicked get coordinates and send them as a post request
+try { 
 navigator.geolocation.getCurrentPosition((position) => {
 
 	const myString = 'getdata';
@@ -54,7 +54,7 @@ navigator.geolocation.getCurrentPosition((position) => {
 	
 	
 		var xml = new XMLHttpRequest();
-xml.open("POST","{{url_for('collect')}}",true); 
+xml.open("POST","{{url_for('collect')}}",true); // Points to "collect" route in server
 xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 
 const btData = {
@@ -63,7 +63,7 @@ location: location,
 };
 
 dataSend= JSON.stringify(btData);
-xml.send(dataSend);
+xml.send(dataSend); // Send post request
 });
 }
 catch {
